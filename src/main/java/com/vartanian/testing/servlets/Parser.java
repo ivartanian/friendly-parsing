@@ -1,6 +1,7 @@
 package com.vartanian.testing.servlets;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.vartanian.testing.model.Item;
 import com.vartanian.testing.utils.JsonUtil;
 import com.vartanian.testing.utils.Utils;
 import org.jsoup.Jsoup;
@@ -30,7 +31,8 @@ public class Parser extends HttpServlet {
     private Utils utils = new Utils();
     private JsonUtil jsonUtil = new JsonUtil();
 
-    private static Set<String> passedRef = new HashSet<String>();
+    private static Set<String> passedRef = new HashSet<>();
+    private static Set<Item> resultsItem = new HashSet<>();
     private static String url;
     private static String template;
 
@@ -63,18 +65,19 @@ public class Parser extends HttpServlet {
         }
 
         response.setContentType("text/html; charset=UTF-8");
-        PrintWriter out = response.getWriter();
 
         //startParsing();
 
         for (String href : passedRef) {
             JsonNode resultNode = getResultFriendlyJsonNode(href, "ru_RU");
-            String resultFriendlyFinal = getResultFriendlyFinal(resultNode, null);
-            out.println(resultFriendlyFinal);
+            Item resultFriendlyFinal = getResultFriendlyFinal(resultNode, null);
+            if (resultFriendlyFinal != null){
+                resultsItem.add(resultFriendlyFinal);
+            }
         }
-        out.print("Хух");
-        out.close();
 
+        request.setAttribute("resultsItem", resultsItem);
+        getServletContext().getRequestDispatcher("/results.jsp").forward(request, response);
     }
 
     public void startParsing() {
@@ -168,7 +171,7 @@ public class Parser extends HttpServlet {
 
     }
 
-    public String getResultFriendlyFinal(JsonNode resultNode, String[] fields) throws IOException {
+    public Item getResultFriendlyFinal(JsonNode resultNode, String[] fields) throws IOException {
 
         JsonNode idNode = jsonUtil.getJsonElement(resultNode, "id");
 
@@ -177,7 +180,7 @@ public class Parser extends HttpServlet {
         JsonNode scoreNode = jsonUtil.getJsonElement(usabilityNode, "score");
         JsonNode passNode = jsonUtil.getJsonElement(usabilityNode, "pass");
 
-        return "<strong> - " + idNode + ":</strong> score: " + scoreNode + ", pass: " + passNode + "<br/>";
+        return new Item(idNode.toString(), scoreNode.toString(), passNode.toString());
 
     }
 
