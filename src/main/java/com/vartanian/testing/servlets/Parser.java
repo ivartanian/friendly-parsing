@@ -53,7 +53,7 @@ public class Parser extends HttpServlet {
         URI uri;
         try {
             uri = new URI(site_url);
-            site_url = uri.getScheme() != null ? site_url + uri.getScheme() + "://" : site_url + "http://";
+            site_url = uri.getScheme() != null ? uri.getScheme() + "://" : "http://";
             site_url = uri.getHost() != null ? site_url + uri.getHost() : site_url + template;
             site_url = site_url + uri.getPath();
             url = site_url;
