@@ -17,11 +17,7 @@ public class Main {
             final int finalI = i;
             service.submit(new Runnable() {
                 public void run() {
-                    try {
-                        utils.getResponse("POST", "http://127.0.0.1:8080/testing/parse", new String[]{"site_url", "max_deep"}, new String[]{"http://kt.ua", String.valueOf(finalI)});
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    utils.getResponse("POST", "http://127.0.0.1:8080/testing/parse", new String[]{"site_url", "max_deep"}, new String[]{"http://kt.ua", String.valueOf(finalI)});
                     System.out.println("Thread: "  +Thread.currentThread().getName() + "---------end() id = " + Thread.currentThread().getId());
                 }
             });

@@ -23,12 +23,15 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 
 /**
  * Created by super on 9/16/15.
  */
 @WebServlet(urlPatterns = "/parse")
 public class Parser extends HttpServlet {
+
+    private static Logger LOG = Logger.getLogger(Parser.class.getName());
 
     private ThreadLocal<Map<String, Object>> threadLocal = new ThreadLocal<>();
 
@@ -38,6 +41,7 @@ public class Parser extends HttpServlet {
     private final int MIN_DELAY = 100;
     private final int MAX_DELAY = 300;
 
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
         ConcurrentHashMap<String, Object> concurrentHashMap = new ConcurrentHashMap();
@@ -92,6 +96,10 @@ public class Parser extends HttpServlet {
 
     private String toFullForm(URL url, boolean root) {
 
+        if (url == null){
+            return null;
+        }
+
         StringBuilder result = new StringBuilder();
         result.append(url.getProtocol());
         result.append(":");
@@ -105,7 +113,7 @@ public class Parser extends HttpServlet {
         return result.toString();
     }
 
-    public void startParsing() throws MalformedURLException {
+    public void startParsing() {
 
         int currentLevel = 0;
 
@@ -114,7 +122,7 @@ public class Parser extends HttpServlet {
 
     }
 
-    private void getRef(String currentURL, int currentLevel) throws MalformedURLException {
+    private void getRef(String currentURL, int currentLevel) {
 
         currentLevel++;
         int maxDeep = (int) getThreadLocalParameter("maxDeep");
@@ -157,8 +165,16 @@ public class Parser extends HttpServlet {
         //get all ref on a page
         Elements links = doc.select(hrefQuery);
         for (Element element : links) {
-            URL url = new URL(element.attr("abs:href"));
+            URL url = null;
+            try {
+                url = new URL(element.attr("abs:href"));
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            }
             String newURI = toFullForm(url, false);
+            if (newURI == null){
+                continue;
+            }
             getRef(newURI, currentLevel);
         }
 
@@ -180,17 +196,23 @@ public class Parser extends HttpServlet {
 
     }
 
-    public Item getResultFriendlyFinal(JsonNode resultNode, String[] fields) throws IOException {
+    public Item getResultFriendlyFinal(JsonNode resultNode, String[] fields) {
 
-        JsonNode idNode = jsonUtil.getJsonElement(resultNode, "id");
-
-        JsonNode ruleGroupsNode = jsonUtil.getJsonElement(resultNode, "ruleGroups");
-        JsonNode usabilityNode = jsonUtil.getJsonElement(ruleGroupsNode, "USABILITY");
-        JsonNode scoreNode = jsonUtil.getJsonElement(usabilityNode, "score");
-        JsonNode passNode = jsonUtil.getJsonElement(usabilityNode, "pass");
-
-        return new Item(idNode.toString(), scoreNode.toString(), passNode.toString());
-
+        JsonNode idNode = null;
+        try {
+            idNode = jsonUtil.getJsonElement(resultNode, "id");
+            if (idNode == null){
+                return null;
+            }
+            JsonNode ruleGroupsNode = jsonUtil.getJsonElement(resultNode, "ruleGroups");
+            JsonNode usabilityNode = jsonUtil.getJsonElement(ruleGroupsNode, "USABILITY");
+            JsonNode scoreNode = jsonUtil.getJsonElement(usabilityNode, "score");
+            JsonNode passNode = jsonUtil.getJsonElement(usabilityNode, "pass");
+            return new Item(idNode.toString(), (scoreNode != null ? scoreNode.toString() : null), (passNode != null ? passNode.toString() : null));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private Map<String, Object> getThreadLocalParameters() {
@@ -219,14 +241,19 @@ public class Parser extends HttpServlet {
         threadLocal.set(stringObjectMap);
     }
 
-    private void startChecking() throws IOException {
+    private void startChecking() {
         Set<String> passedRef = (Set<String>) getThreadLocalParameter("passedRef");
         Set<Item> resultItems = (Set<Item>) getThreadLocalParameter("resultItems");
         for (String href : passedRef) {
-            JsonNode resultNode = getResultFriendlyJsonNode(href, "ru_RU");
-            Item resultFriendlyFinal = getResultFriendlyFinal(resultNode, null);
-            if (resultFriendlyFinal != null) {
-                resultItems.add(resultFriendlyFinal);
+            JsonNode resultNode = null;
+            try {
+                resultNode = getResultFriendlyJsonNode(href, "ru_RU");
+                Item resultFriendlyFinal = getResultFriendlyFinal(resultNode, null);
+                if (resultFriendlyFinal != null) {
+                    resultItems.add(resultFriendlyFinal);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }

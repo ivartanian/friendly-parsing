@@ -4,8 +4,11 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -14,7 +17,7 @@ import java.util.Map;
 
 public class Utils {
 
-    public String getResponse(String methodName, String url, String[] names, String[] values) throws IOException {
+    public String getResponse(String methodName, String url, String[] names, String[] values) {
 
         HttpMethod method = getHttpMethod(methodName, url, names, values);
         return getBodyResult(method);
@@ -55,12 +58,20 @@ public class Utils {
         return method;
     }
 
-    public String getBodyResult(HttpMethod method) throws IOException {
+    public String getBodyResult(HttpMethod method) {
         if (method == null){
             return null;
         }
-        new HttpClient().executeMethod(method);
-        return method.getResponseBodyAsString();
+        try {
+            new HttpClient().executeMethod(method);
+            InputStream responseBodyAsStream = method.getResponseBodyAsStream();
+            StringWriter writer = new StringWriter();
+            IOUtils.copy(responseBodyAsStream, writer, "utf8");
+            return writer.toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
 }
