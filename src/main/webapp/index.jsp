@@ -13,9 +13,15 @@
 <body>
 
 <form action="/testing/parse" method="POST">
+
     <label for="site_url" >Введите сайт:</label>
-    <input type="text" id="site_url" name="site_url"/>
+    <input type="text" id="site_url" name="site_url" value="http://"/>
+    <br>
+    <label for="max_deep" >Глубина парсинга:</label>
+    <input type="number" id="max_deep" name="max_deep" value="2"/>
+    <br>
     <input type="submit" value="Парсить"/>
+
 </form>
 
 </body>

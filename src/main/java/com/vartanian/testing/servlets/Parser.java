@@ -9,18 +9,20 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
+import java.net.URL;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by super on 9/16/15.
@@ -28,61 +30,40 @@ import java.util.Set;
 @WebServlet(urlPatterns = "/parse")
 public class Parser extends HttpServlet {
 
-    private Utils utils = new Utils();
-    private JsonUtil jsonUtil = new JsonUtil();
+    private ThreadLocal<Map<String, Object>> threadLocal = new ThreadLocal<>();
 
-    private static Set<String> passedRef = new HashSet<>();
-    private static Set<Item> resultsItem = new HashSet<>();
-    private static String url;
-    private static String template;
+    private final Utils utils = new Utils();
+    private final JsonUtil jsonUtil = new JsonUtil();
 
-    private static int MIN_DELAY = 100;
-    private static int MAX_DELAY = 300;
-
-    private static int maxLevel = 2;
-
-    private static String hrefQuery;
-
+    private final int MIN_DELAY = 100;
+    private final int MAX_DELAY = 300;
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
+        ConcurrentHashMap<String, Object> concurrentHashMap = new ConcurrentHashMap();
+
+        Set<String> passedRef = new HashSet<>();
+        Set<Item> resultItems = new HashSet<>();
+        int maxDeep = 2;
+        String site;
+        String template;
+
         String site_url = request.getParameter("site_url");
 
-        if (site_url == null){
+        if (site_url == null || "".equals(site_url) || !site_url.startsWith("http://")) {
             getServletContext().getRequestDispatcher("/").forward(request, response);
         }
 
-        URI uri;
-        try {
-            uri = new URI(site_url);
-            site_url = uri.getScheme() != null ? uri.getScheme() + "://" : "http://";
-            site_url = uri.getHost() != null ? site_url + uri.getHost() : site_url + template;
-            site_url = site_url + uri.getPath();
-            url = site_url;
-            template = uri.getPath();
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
+        String max_deep = request.getParameter("max_deep");
+        if (max_deep != null && !"".equals(max_deep)) {
+            maxDeep = Integer.valueOf(max_deep);
         }
 
-        response.setContentType("text/html; charset=UTF-8");
+        URL url = new URL(site_url);
+        site = toFullForm(url, false);
+        template = toFullForm(url, true);
 
-        //startParsing();
-
-        for (String href : passedRef) {
-            JsonNode resultNode = getResultFriendlyJsonNode(href, "ru_RU");
-            Item resultFriendlyFinal = getResultFriendlyFinal(resultNode, null);
-            if (resultFriendlyFinal != null){
-                resultsItem.add(resultFriendlyFinal);
-            }
-        }
-
-        request.setAttribute("resultsItem", resultsItem);
-        getServletContext().getRequestDispatcher("/results.jsp").forward(request, response);
-    }
-
-    public void startParsing() {
-
-        hrefQuery = new StringBuilder().append("a[href*=")
+        String hrefQuery = new StringBuilder().append("a[href*=")
                 .append(template)
                 .append("]")
                 .append(":not([href$=.jpg])")
@@ -94,24 +75,61 @@ public class Parser extends HttpServlet {
                 .append(":not([href$=.js])")
                 .toString();
 
+        setThreadLocalParameter("passedRef", passedRef);
+        setThreadLocalParameter("resultItems", resultItems);
+        setThreadLocalParameter("maxDeep", maxDeep);
+        setThreadLocalParameter("site", site);
+        setThreadLocalParameter("template", template);
+        setThreadLocalParameter("hrefQuery", hrefQuery);
+
+        startParsing();
+
+        startChecking();
+
+        request.setAttribute("resultItems", resultItems);
+        getServletContext().getRequestDispatcher("/results.jsp").forward(request, response);
+    }
+
+    private String toFullForm(URL url, boolean root) {
+
+        StringBuilder result = new StringBuilder();
+        result.append(url.getProtocol());
+        result.append(":");
+        if (url.getAuthority() != null && url.getAuthority().length() > 0) {
+            result.append("//");
+            result.append(url.getAuthority());
+        }
+        if (!root && url.getPath() != null) {
+            result.append(url.getPath());
+        }
+        return result.toString();
+    }
+
+    public void startParsing() throws MalformedURLException {
+
         int currentLevel = 0;
 
+        String url = (String) getThreadLocalParameter("site");
         getRef(url, currentLevel);
 
     }
 
-    private void getRef(String currentURL, int currentLevel) {
+    private void getRef(String currentURL, int currentLevel) throws MalformedURLException {
 
         currentLevel++;
-
-        if (currentLevel > maxLevel){
-            if (currentLevel > 0){
+        int maxDeep = (int) getThreadLocalParameter("maxDeep");
+        if (currentLevel > maxDeep) {
+            if (currentLevel > 0) {
                 currentLevel--;
             }
             return;
         }
-        if (passedRef.contains(currentURL)){
-            if (currentLevel > 0){
+
+        Set<String> passedRef = (Set<String>) getThreadLocalParameter("passedRef");
+        String hrefQuery = (String) getThreadLocalParameter("hrefQuery");
+
+        if (passedRef.contains(currentURL)) {
+            if (currentLevel > 0) {
                 currentLevel--;
             }
             return;
@@ -126,12 +144,11 @@ public class Parser extends HttpServlet {
             //NOP
         }
 
-        Document doc = null;
+        Document doc;
         try {
             doc = Jsoup.connect(currentURL).get();
         } catch (IOException e) {
-            e.printStackTrace();
-            if (currentLevel > 0){
+            if (currentLevel > 0) {
                 currentLevel--;
             }
             return;
@@ -139,23 +156,15 @@ public class Parser extends HttpServlet {
 
         //get all ref on a page
         Elements links = doc.select(hrefQuery);
-        for (Element element:links) {
-            URI uri;
-            String newURI = "";
-            try {
-                uri = new URI(element.attr("abs:href"));
-                newURI = uri.getScheme() != null ? newURI + uri.getScheme() + "://" : newURI + "http://";
-                newURI = uri.getHost() != null ? newURI + uri.getHost() : newURI + template;
-                newURI = newURI + uri.getPath();
-            } catch (URISyntaxException e) {
-                e.printStackTrace();
-            }
+        for (Element element : links) {
+            URL url = new URL(element.attr("abs:href"));
+            String newURI = toFullForm(url, false);
             getRef(newURI, currentLevel);
         }
 
     }
 
-    public static void randomPause() throws InterruptedException {
+    public void randomPause() throws InterruptedException {
         Random rnd = new Random();
         long delay = MIN_DELAY + rnd.nextInt(MAX_DELAY - MIN_DELAY);
         Thread.sleep(delay);
@@ -182,6 +191,44 @@ public class Parser extends HttpServlet {
 
         return new Item(idNode.toString(), scoreNode.toString(), passNode.toString());
 
+    }
+
+    private Map<String, Object> getThreadLocalParameters() {
+        Map<String, Object> stringObjectMap = threadLocal.get();
+        if (stringObjectMap == null) {
+            stringObjectMap = new ConcurrentHashMap<>();
+            threadLocal.set(stringObjectMap);
+        }
+        return stringObjectMap;
+    }
+
+    private Object getThreadLocalParameter(String key) {
+        Map<String, Object> threadLocalParameters = getThreadLocalParameters();
+        if (threadLocalParameters.containsKey(key)) {
+            return threadLocalParameters.get(key);
+        }
+        return null;
+    }
+
+    private void setThreadLocalParameter(String key, Object value) {
+        Map<String, Object> stringObjectMap = threadLocal.get();
+        if (stringObjectMap == null) {
+            stringObjectMap = new ConcurrentHashMap<>();
+        }
+        stringObjectMap.put(key, value);
+        threadLocal.set(stringObjectMap);
+    }
+
+    private void startChecking() throws IOException {
+        Set<String> passedRef = (Set<String>) getThreadLocalParameter("passedRef");
+        Set<Item> resultItems = (Set<Item>) getThreadLocalParameter("resultItems");
+        for (String href : passedRef) {
+            JsonNode resultNode = getResultFriendlyJsonNode(href, "ru_RU");
+            Item resultFriendlyFinal = getResultFriendlyFinal(resultNode, null);
+            if (resultFriendlyFinal != null) {
+                resultItems.add(resultFriendlyFinal);
+            }
+        }
     }
 
 }
