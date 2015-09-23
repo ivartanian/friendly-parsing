@@ -7,12 +7,12 @@ import java.util.concurrent.Executors;
 /**
  * Created by super on 9/22/15.
  */
-public class Main {
+public class Test {
     public static void main(String[] args) throws IOException {
 
         Utils utils = new Utils();
 
-        ExecutorService service = Executors.newCachedThreadPool();
+        ExecutorService service = Executors.newFixedThreadPool(5);
         for(int i = 1; i < 11; i++) {
             final int finalI = i;
             service.submit(new Runnable() {
@@ -23,5 +23,6 @@ public class Main {
             });
         }
 
+        service.shutdown();
     }
 }

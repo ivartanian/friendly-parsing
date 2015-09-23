@@ -10,10 +10,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 public class Utils {
 
@@ -72,6 +74,25 @@ public class Utils {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static String toFullForm(URL url, boolean root) {
+
+        if (url == null){
+            return null;
+        }
+
+        StringBuilder result = new StringBuilder();
+        result.append(url.getProtocol());
+        result.append(":");
+        if (url.getAuthority() != null && url.getAuthority().length() > 0) {
+            result.append("//");
+            result.append(url.getAuthority());
+        }
+        if (!root && url.getPath() != null) {
+            result.append(url.getPath());
+        }
+        return result.toString();
     }
 
 }
