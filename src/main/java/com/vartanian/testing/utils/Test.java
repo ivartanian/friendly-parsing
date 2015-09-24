@@ -1,8 +1,16 @@
 package com.vartanian.testing.utils;
 
+import com.vartanian.testing.cuncurrent.Parser;
+import com.vartanian.testing.cuncurrent.impl.MultiThreadParserFastImpl;
+import com.vartanian.testing.model.Item;
+
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.*;
 
 /**
  * Created by super on 9/22/15.
@@ -10,19 +18,60 @@ import java.util.concurrent.Executors;
 public class Test {
     public static void main(String[] args) throws IOException {
 
-        Utils utils = new Utils();
+        int NCPU = Runtime.getRuntime().availableProcessors();
 
-        ExecutorService service = Executors.newFixedThreadPool(5);
-        for(int i = 1; i < 11; i++) {
-            final int finalI = i;
-            service.submit(new Runnable() {
-                public void run() {
-                    utils.getResponse("POST", "http://127.0.0.1:8080/testing/parse", new String[]{"site_url", "max_deep"}, new String[]{"http://kt.ua", String.valueOf(finalI)});
-                    System.out.println("Thread: "  +Thread.currentThread().getName() + "---------end() id = " + Thread.currentThread().getId());
-                }
-            });
+        ExecutorService executorService = Executors.newCachedThreadPool(); //TODO: customize
+
+        ArrayBlockingQueue<String> resultLinks = new ArrayBlockingQueue<String>(10000);
+        Map<String, Object> parameters = new HashMap<>();
+
+        Set<Item> resultItems = new HashSet<>();
+        int maxDeep = 3;
+        String site = "http://kt.ua";
+        String template;
+
+        String hrefQuery = new StringBuilder().append("a[href*=")
+                .append("http://kt.ua")
+                .append("]")
+                .append(":not([href$=.jpg])")
+                .append(":not([href$=.xls])")
+                .append(":not([href$=.gif])")
+                .append(":not([href$=.png])")
+                .append(":not([href$=.jpeg])")
+                .append(":not([href$=.css])")
+                .append(":not([href$=.js])")
+                .toString();
+
+        ArrayBlockingQueue<String>[] queues = new ArrayBlockingQueue[maxDeep];
+        for (int i = 0; i < maxDeep; i++) {
+            queues[i] = new ArrayBlockingQueue<String>(1000);
         }
+        Parser task = new MultiThreadParserFastImpl(resultLinks, site, maxDeep, hrefQuery, queues);
+        task.run();
 
-        service.shutdown();
+//        for (int i = 0; i <= NCPU; i++) {
+//            Parser task = new MultiThreadParserFastImpl(resultLinks, site, maxDeep, hrefQuery, queues);
+//            task.init();
+//            executorService.submit(task);
+//        }
+//        executorService.shutdown();
+//
+//        boolean termination = false;
+//        try {
+//            termination = executorService.awaitTermination(1, TimeUnit.HOURS);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+//
+//        if (!termination){
+//            System.out.println("!!!!!!!!! termination = " + termination);
+//            executorService.shutdownNow();
+//        }
+
+        System.out.println("-----------------------------------------------");
+        for (String resultLink : resultLinks) {
+            System.out.println("link: " + resultLink);
+        }
+        System.out.println("Total links = " + resultLinks.size());
     }
 }

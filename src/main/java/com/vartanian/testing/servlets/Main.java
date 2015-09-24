@@ -2,6 +2,7 @@ package com.vartanian.testing.servlets;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.vartanian.testing.cuncurrent.Parser;
+import com.vartanian.testing.cuncurrent.impl.MultiThreadParserFastImpl;
 import com.vartanian.testing.cuncurrent.impl.MultiThreadParserImpl;
 import com.vartanian.testing.model.Item;
 import com.vartanian.testing.utils.JsonUtil;
@@ -15,10 +16,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 /**
@@ -45,7 +43,6 @@ public class Main extends HttpServlet {
         ConcurrentHashMap<String, Object> concurrentHashMap = new ConcurrentHashMap();
         Map<String, Object> parameters = new HashMap<>();
 
-//        Set<String> passedRef = new HashSet<>();
         Set<Item> resultItems = new HashSet<>();
         int maxDeep = 2;
         String site;
@@ -78,13 +75,14 @@ public class Main extends HttpServlet {
                 .append(":not([href$=.js])")
                 .toString();
 
-//        parameters.put("passedRef", passedRef);
-//        parameters.put("resultItems", resultItems);
         parameters.put("maxDeep", maxDeep);
         parameters.put("site", site);
-//        parameters.put("template", template);
         parameters.put("hrefQuery", hrefQuery);
 
+        ArrayBlockingQueue<String>[] queues = new ArrayBlockingQueue[maxDeep];
+        for (int i = 0; i < maxDeep; i++) {
+            queues[i] = new ArrayBlockingQueue<String>(1000);
+        }
         for (int i = 0; i <= NCPU; i++) {
             Parser task = new MultiThreadParserImpl(concurrentHashMap, parameters);
             task.init();

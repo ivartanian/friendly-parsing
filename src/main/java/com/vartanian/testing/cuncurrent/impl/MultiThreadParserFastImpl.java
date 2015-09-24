@@ -13,6 +13,7 @@ import java.net.URL;
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by super on 9/23/15.
@@ -26,12 +27,12 @@ public class MultiThreadParserFastImpl implements Parser {
     private final String hrefQuery;
     private final int maxDeep;
 
-    private ConcurrentHashMap<String, Object> resultLinks;
-    private ArrayBlockingQueue<String> queue;
+    private ArrayBlockingQueue<String> resultLinks;
+    private ArrayBlockingQueue<String>[] queues;
 
-    public MultiThreadParserFastImpl(ConcurrentHashMap<String, Object> resultLinks, String site, int maxDeep, String hrefQuery, ArrayBlockingQueue<String> queue) {
+    public MultiThreadParserFastImpl(ArrayBlockingQueue<String> resultLinks, String site, int maxDeep, String hrefQuery, ArrayBlockingQueue<String>[] queues) {
         this.resultLinks = resultLinks;
-        this.queue = queue;
+        this.queues = queues;
         this.site = site;
         this.hrefQuery = hrefQuery;
         this.maxDeep = maxDeep;
@@ -47,59 +48,76 @@ public class MultiThreadParserFastImpl implements Parser {
 
         int currentLevel = 0;
 
-        String currentURL = null;
-        try {
-            currentURL = queue.take();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        putLink(site, currentLevel);
 
-        }
-
-        Elements links = getLinks(currentURL);
-
-        if (links == null){
-            resultLinks.put(currentURL, currentURL);
+        String nextLink = readNextLink();
+        if (nextLink == null) {
+            putResultLink(site);
             return;
         }
 
-        for (Element element : links) {
-            URL url;
+        requestNextLinks(nextLink, currentLevel);
+    }
+
+    public String readNextLink() {
+
+        String link = null;
+        for (ArrayBlockingQueue<String> queue : queues) {
             try {
-                url = new URL(element.attr("abs:href"));
-            } catch (MalformedURLException e) {
+                link = queue.poll(100, TimeUnit.MILLISECONDS);
+                if (link != null){
+                    putResultLink(link);
+                    break;
+                }
+            } catch (InterruptedException e) {
                 e.printStackTrace();
-                continue;
+                break;
             }
-            String newURI = Utils.toFullForm(url, false);
-            if (newURI == null){
-                continue;
-            }
-            getRef(newURI, currentLevel);
+        }
+        return link;
+    }
+
+    public void putLink(String link, int currentLevel) {
+
+        try {
+            queues[currentLevel].offer(link, 100, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
     }
 
-    private void getRef(String currentURL, int currentLevel) {
+    private void requestNextLinks(String currentURL, int currentLevel) {
 
-        if (currentLevel > maxDeep) {
+        currentLevel++;
+        if (currentLevel >= maxDeep) {
             return;
         }
-
-        if (resultLinks.contains(currentURL)) {
-            return;
-        }
-
-        resultLinks.put(currentURL, currentURL);
-
-        String ch = "";
-        for (int i = 0; i < currentLevel; i++) {
-            ch = ch + "-";
-        }
-        System.out.println(ch + currentURL + " ||| Thread: " + Thread.currentThread().getName() + "|||| level: " + currentLevel);
 
         randomPause(MIN_DELAY, MAX_DELAY);
 
+        Elements links = getLinks(currentURL);
 
+        if (links == null){
+            return;
+        }
+
+        //get all ref on a page
+        for (Element element : links) {
+            URL url = null;
+            try {
+                url = new URL(element.attr("abs:href"));
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            }
+            String newURI = Utils.toFullForm(url, false);
+            if (newURI == null) {
+                continue;
+            }
+            putLink(newURI, currentLevel);
+        }
+        String nextLink = readNextLink();
+        requestNextLinks(nextLink, currentLevel);
     }
 
     private Elements getLinks(String currentURL) {
@@ -114,6 +132,16 @@ public class MultiThreadParserFastImpl implements Parser {
         //get all ref on a page
         return doc.select(hrefQuery);
 
+    }
+
+    private synchronized void putResultLink(String resultLink) {
+        if (!resultLinks.contains(resultLink)) {
+            try {
+                resultLinks.offer(resultLink, 100, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public void randomPause(int MIN_DELAY, int MAX_DELAY) {
