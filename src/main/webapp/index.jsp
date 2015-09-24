@@ -12,7 +12,7 @@
 </head>
 <body>
 
-<form action="/testing/parse" method="POST">
+<form action="/friendly-parsing/parse" method="POST">
 
     <label for="site_url" >Введите сайт:</label>
     <input type="text" id="site_url" name="site_url" value="http://"/>

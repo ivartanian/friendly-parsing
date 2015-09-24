@@ -10,8 +10,8 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -19,18 +19,19 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class MultiThreadParserFastImpl implements Parser {
 
-    private final int MIN_DELAY = 100;
-    private final int MAX_DELAY = 300;
+    private static final int MIN_DELAY = 100;
+    private static final int MAX_DELAY = 300;
 
     private final String site;
     private final String hrefQuery;
     private final int maxDeep;
 
-    private ConcurrentHashMap<String, Object> concurrentHashMap;
-    private Map<String, Object> parameters;
+    private ConcurrentHashMap<String, Object> resultLinks;
+    private ArrayBlockingQueue<String> queue;
 
-    public MultiThreadParserFastImpl(ConcurrentHashMap<String, Object> concurrentHashMap, String site, int maxDeep, String hrefQuery) {
-        this.concurrentHashMap = concurrentHashMap;
+    public MultiThreadParserFastImpl(ConcurrentHashMap<String, Object> resultLinks, String site, int maxDeep, String hrefQuery, ArrayBlockingQueue<String> queue) {
+        this.resultLinks = resultLinks;
+        this.queue = queue;
         this.site = site;
         this.hrefQuery = hrefQuery;
         this.maxDeep = maxDeep;
@@ -43,26 +44,31 @@ public class MultiThreadParserFastImpl implements Parser {
 
     @Override
     public void run() {
-        startParsing();
-    }
-
-    public void startParsing() {
 
         int currentLevel = 0;
 
-        Elements links = getLinks(site);
+        String currentURL = null;
+        try {
+            currentURL = queue.take();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+
+        }
+
+        Elements links = getLinks(currentURL);
 
         if (links == null){
-            concurrentHashMap.put(site, site);
+            resultLinks.put(currentURL, currentURL);
             return;
         }
 
         for (Element element : links) {
-            URL url = null;
+            URL url;
             try {
                 url = new URL(element.attr("abs:href"));
             } catch (MalformedURLException e) {
                 e.printStackTrace();
+                continue;
             }
             String newURI = Utils.toFullForm(url, false);
             if (newURI == null){
@@ -76,20 +82,14 @@ public class MultiThreadParserFastImpl implements Parser {
     private void getRef(String currentURL, int currentLevel) {
 
         if (currentLevel > maxDeep) {
-            if (currentLevel > 0) {
-                currentLevel--;
-            }
             return;
         }
 
-        if (concurrentHashMap.contains(currentURL)) {
-            if (currentLevel > 0) {
-                currentLevel--;
-            }
+        if (resultLinks.contains(currentURL)) {
             return;
         }
 
-        concurrentHashMap.put(currentURL, currentURL);
+        resultLinks.put(currentURL, currentURL);
 
         String ch = "";
         for (int i = 0; i < currentLevel; i++) {

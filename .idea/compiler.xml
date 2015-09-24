@@ -24,6 +24,13 @@
         <processorPath useClasspath="true" />
         <module name="testing" />
       </profile>
+      <profile default="false" name="Annotation profile for friendly-parsing" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="true" />
+        <module name="friendly-parsing" />
+      </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="friendly-parsing" target="1.8" />

@@ -7,7 +7,7 @@
 </head>
 <body>
 <div>
-    <a href="/testing">На главную</a>
+    <a href="/friendly-parsing">На главную</a>
 </div>
 <div>
     <c:forEach var="varItem" items="${resultItems}">
