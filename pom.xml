@@ -108,12 +108,12 @@
                     <charset>utf-8</charset>
                     <server>apache-tomcat-8.0.26</server>
                     <url>http://localhost:8080/manager/text</url>
-                    <path>/testing</path>
+                    <path>/friendly-parsing</path>
                 </configuration>
             </plugin>
 
         </plugins>
-        <finalName>testing</finalName>
+        <finalName>friendly-parsing</finalName>
     </build>
 
 </project>

@@ -52,8 +52,9 @@ public class MultiThreadParserFastImpl implements Parser {
 
         Elements links = getLinks(site);
 
-        if (links == null && currentLevel > 0){
-            currentLevel--;
+        if (links == null){
+            concurrentHashMap.put(site, site);
+            return;
         }
 
         for (Element element : links) {

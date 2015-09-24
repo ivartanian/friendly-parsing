@@ -1,6 +1,6 @@
 <component name="ArtifactManager">
-  <artifact type="exploded-war" name="testing:war exploded">
-    <output-path>$PROJECT_DIR$/target/testing</output-path>
+  <artifact type="exploded-war" name="friendly-parsing:war exploded">
+    <output-path>$PROJECT_DIR$/target/friendly-parsing</output-path>
     <root id="root">
       <element id="directory" name="WEB-INF">
         <element id="directory" name="classes">
@@ -23,7 +23,7 @@
         </element>
       </element>
       <element id="directory" name="META-INF">
-        <element id="file-copy" path="$PROJECT_DIR$/target/testing/META-INF/MANIFEST.MF" />
+        <element id="file-copy" path="$PROJECT_DIR$/target/friendly-parsing/META-INF/MANIFEST.MF" />
       </element>
       <element id="javaee-facet-resources" facet="friendly-parsing/web/Web" />
     </root>

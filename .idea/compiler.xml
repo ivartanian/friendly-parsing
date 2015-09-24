@@ -26,6 +26,7 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="friendly-parsing" target="1.8" />
       <module name="testing" target="1.8" />
     </bytecodeTargetLevel>
   </component>
