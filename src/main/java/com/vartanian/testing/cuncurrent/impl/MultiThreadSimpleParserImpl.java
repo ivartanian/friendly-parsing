@@ -18,22 +18,22 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by super on 9/23/15.
  */
-public class MultiThreadParserFastImpl implements Parser {
+public class MultiThreadSimpleParserImpl implements Parser {
 
     private static final int MIN_DELAY = 100;
     private static final int MAX_DELAY = 300;
 
-    private final String site;
+    private final LevelLink site;
     private final String hrefQuery;
     private final int maxDeep;
 
     private ArrayBlockingQueue<String> resultLinks;
-    private ArrayBlockingQueue<String>[] queues;
+    private ArrayBlockingQueue<LevelLink> queue;
 
-    public MultiThreadParserFastImpl(ArrayBlockingQueue<String> resultLinks, String site, int maxDeep, String hrefQuery, ArrayBlockingQueue<String>[] queues) {
+    public MultiThreadSimpleParserImpl(ArrayBlockingQueue<String> resultLinks, String site, int maxDeep, String hrefQuery, ArrayBlockingQueue<LevelLink> queue) {
         this.resultLinks = resultLinks;
-        this.queues = queues;
-        this.site = site;
+        this.queue = queue;
+        this.site = new LevelLink(site, 0);
         this.hrefQuery = hrefQuery;
         this.maxDeep = maxDeep;
     }
@@ -46,17 +46,15 @@ public class MultiThreadParserFastImpl implements Parser {
     @Override
     public void run() {
 
-        int currentLevel = 0;
+        putLink(site);
 
-        putLink(site, currentLevel);
-
-        while (true){
+        while (true) {
 
             LevelLink levelLink = readNextLink();
-            if (levelLink==null) {
+            if (levelLink == null) {
                 break;
             }
-            requestNextLinks(levelLink.getLink(), levelLink.getLevel());
+            requestNextLinks(levelLink);
 
         }
 
@@ -65,28 +63,22 @@ public class MultiThreadParserFastImpl implements Parser {
     public LevelLink readNextLink() {
 
         LevelLink levelLink = null;
-        for (int i = 0; i < maxDeep; i++) {
-            ArrayBlockingQueue<String> queue = queues[i];
-            try {
-                String link = queue.poll(10, TimeUnit.MILLISECONDS);
-                if (link != null){
-                    levelLink = new LevelLink(link, i);
-                    putResultLink(link);
-                    break;
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                break;
+        try {
+            levelLink = queue.poll(10, TimeUnit.MILLISECONDS);
+            if (levelLink != null) {
+                putResultLink(levelLink);
             }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
         return levelLink;
     }
 
-    public synchronized void putLink(String link, int currentLevel) {
+    public synchronized void putLink(LevelLink levelLink) {
 
         try {
-            if (!queues[currentLevel].contains(link)){
-                queues[currentLevel].offer(link, 1000, TimeUnit.MILLISECONDS);
+            if (!resultLinks.contains(levelLink.getLink())) {
+                queue.offer(levelLink, 1000, TimeUnit.MILLISECONDS);
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -94,23 +86,25 @@ public class MultiThreadParserFastImpl implements Parser {
 
     }
 
-    private void requestNextLinks(String currentURL, int currentLevel) {
+    private void requestNextLinks(LevelLink levelLink) {
 
-        currentLevel++;
+        int currentLevel = levelLink.getLevel() + 1;
 
         String ch = "";
         for (int i = 0; i < currentLevel; i++) {
             ch = ch + "--";
         }
-        System.out.println(" " + ch + " " + currentURL + " ||| Thread: " + Thread.currentThread().getName() + " ||| level: " + currentLevel);
+        System.out.println(" " + ch + " " + levelLink.getLink() + " ||| Thread: " + Thread.currentThread().getName() + " ||| level: " + currentLevel);
 
         if (currentLevel >= maxDeep) {
             return;
         }
 
-        Elements links = getLinks(currentURL);
+//        randomPause();
 
-        if (links == null){
+        Elements links = getLinks(levelLink.getLink());
+
+        if (links == null) {
             return;
         }
 
@@ -126,12 +120,12 @@ public class MultiThreadParserFastImpl implements Parser {
             if (newURI == null) {
                 continue;
             }
-            putLink(newURI, currentLevel);
+            putLink(new LevelLink(newURI, currentLevel));
         }
 
         LevelLink nextLevelLink = readNextLink();
-        if (nextLevelLink != null){
-            requestNextLinks(nextLevelLink.getLink(), nextLevelLink.getLevel());
+        if (nextLevelLink != null) {
+            requestNextLinks(nextLevelLink);
         }
     }
 
@@ -141,6 +135,8 @@ public class MultiThreadParserFastImpl implements Parser {
         try {
             doc = Jsoup.connect(currentURL).get();
         } catch (IOException e) {
+            System.err.println("currentURL = "  +currentURL);
+            e.printStackTrace();
             return null;
         }
 
@@ -149,17 +145,17 @@ public class MultiThreadParserFastImpl implements Parser {
 
     }
 
-    private synchronized void putResultLink(String resultLink) {
-        if (!resultLinks.contains(resultLink)) {
+    private synchronized void putResultLink(LevelLink resultLink) {
+        if (!resultLinks.contains(resultLink.getLink())) {
             try {
-                resultLinks.offer(resultLink, 10, TimeUnit.MILLISECONDS);
+                resultLinks.offer(resultLink.getLink(), 10, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    public void randomPause(int MIN_DELAY, int MAX_DELAY) {
+    public void randomPause() {
         Random rnd = new Random();
         long delay = MIN_DELAY + rnd.nextInt(MAX_DELAY - MIN_DELAY);
         try {
