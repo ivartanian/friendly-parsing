@@ -1,8 +1,9 @@
-package com.vartanian.testing.cuncurrent.impl;
+package com.vartanian.friendlyparsing.parsers;
 
-import com.vartanian.testing.cuncurrent.Parser;
-import com.vartanian.testing.model.LevelLink;
-import com.vartanian.testing.utils.Utils;
+import com.vartanian.friendlyparsing.model.LevelLink;
+import com.vartanian.friendlyparsing.utils.Utils;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -11,6 +12,7 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -18,7 +20,9 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by super on 9/23/15.
  */
-public class MultiThreadSimpleParserImpl implements Parser {
+public class MultiThreadSimpleParserImpl implements Runnable {
+
+    private static Logger LOG = Logger.getLogger(MultiThreadSimpleParserImpl.class.getName());
 
     private static final int MIN_DELAY = 100;
     private static final int MAX_DELAY = 300;
@@ -29,64 +33,58 @@ public class MultiThreadSimpleParserImpl implements Parser {
 
     private ArrayBlockingQueue<String> resultLinks;
     private ArrayBlockingQueue<LevelLink> queue;
+    private List<String> fullLinks;
 
-    public MultiThreadSimpleParserImpl(ArrayBlockingQueue<String> resultLinks, String site, int maxDeep, String hrefQuery, ArrayBlockingQueue<LevelLink> queue) {
+    public MultiThreadSimpleParserImpl(ArrayBlockingQueue<String> resultLinks, String site, int maxDeep, String hrefQuery, ArrayBlockingQueue<LevelLink> queue, List<String> fullLinks) {
         this.resultLinks = resultLinks;
         this.queue = queue;
+        this.fullLinks = fullLinks;
         this.site = new LevelLink(site, 0);
         this.hrefQuery = hrefQuery;
         this.maxDeep = maxDeep;
     }
 
     @Override
-    public void init() {
-
-    }
-
-    @Override
     public void run() {
 
-        putLink(site);
+        try {
+            putLink(site);
+            while (true) {
 
-        while (true) {
+                LevelLink levelLink = readNextLink();
+                if (levelLink == null) {
+                    break;
+                }
+                requestNextLinks(levelLink);
 
-            LevelLink levelLink = readNextLink();
-            if (levelLink == null) {
-                break;
             }
-            requestNextLinks(levelLink);
 
+        } catch (InterruptedException e) {
+            LOG.log(Level.INFO, "Exception: ", e);
         }
 
     }
 
-    public LevelLink readNextLink() {
+    public LevelLink readNextLink() throws InterruptedException {
 
-        LevelLink levelLink = null;
-        try {
-            levelLink = queue.poll(10, TimeUnit.MILLISECONDS);
-            if (levelLink != null) {
-                putResultLink(levelLink);
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        LevelLink levelLink = queue.poll(10, TimeUnit.MILLISECONDS);
+        if (levelLink != null) {
+            putResultLink(levelLink);
         }
         return levelLink;
     }
 
-    public synchronized void putLink(LevelLink levelLink) {
+    public synchronized void putLink(LevelLink levelLink) throws InterruptedException {
 
-        try {
-            if (!resultLinks.contains(levelLink.getLink())) {
-                queue.offer(levelLink, 1000, TimeUnit.MILLISECONDS);
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        if (levelLink == null) return;
+
+        if (!fullLinks.contains(levelLink.getLink())) {
+            queue.offer(levelLink, 10, TimeUnit.MILLISECONDS);
         }
 
     }
 
-    private void requestNextLinks(LevelLink levelLink) {
+    private void requestNextLinks(LevelLink levelLink) throws InterruptedException {
 
         int currentLevel = levelLink.getLevel() + 1;
 
@@ -94,7 +92,6 @@ public class MultiThreadSimpleParserImpl implements Parser {
         for (int i = 0; i < currentLevel; i++) {
             ch = ch + "--";
         }
-        System.out.println(" " + ch + " " + levelLink.getLink() + " ||| Thread: " + Thread.currentThread().getName() + " ||| level: " + currentLevel);
 
         if (currentLevel >= maxDeep) {
             return;
@@ -108,13 +105,15 @@ public class MultiThreadSimpleParserImpl implements Parser {
             return;
         }
 
+        LOG.log(Level.DEBUG, " " + ch + " " + levelLink.getLink() + " ||| Thread: " + Thread.currentThread().getName() + " ||| level: " + currentLevel + " newLinks=" + links.size());
+
         //get all ref on a page
         for (Element element : links) {
             URL url = null;
             try {
                 url = new URL(element.attr("abs:href"));
             } catch (MalformedURLException e) {
-                e.printStackTrace();
+                LOG.log(Level.INFO, "Exception: ", e);
             }
             String newURI = Utils.toFullForm(url, false);
             if (newURI == null) {
@@ -135,8 +134,7 @@ public class MultiThreadSimpleParserImpl implements Parser {
         try {
             doc = Jsoup.connect(currentURL).get();
         } catch (IOException e) {
-            System.err.println("currentURL = "  +currentURL);
-            e.printStackTrace();
+            LOG.log(Level.INFO, "Exception connection URL: " + currentURL, e);
             return null;
         }
 
@@ -145,24 +143,17 @@ public class MultiThreadSimpleParserImpl implements Parser {
 
     }
 
-    private synchronized void putResultLink(LevelLink resultLink) {
-        if (!resultLinks.contains(resultLink.getLink())) {
-            try {
-                resultLinks.offer(resultLink.getLink(), 10, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+    private synchronized void putResultLink(LevelLink resultLink) throws InterruptedException {
+        if (!fullLinks.contains(resultLink.getLink())) {
+            resultLinks.offer(resultLink.getLink(), 10, TimeUnit.MILLISECONDS);
+            fullLinks.add(resultLink.getLink());
         }
     }
 
-    public void randomPause() {
+    public void randomPause() throws InterruptedException {
         Random rnd = new Random();
         long delay = MIN_DELAY + rnd.nextInt(MAX_DELAY - MIN_DELAY);
-        try {
-            Thread.sleep(delay);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        Thread.sleep(delay);
     }
 
 }

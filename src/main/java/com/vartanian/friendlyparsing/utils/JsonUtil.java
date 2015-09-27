@@ -1,4 +1,4 @@
-package com.vartanian.testing.utils;
+package com.vartanian.friendlyparsing.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

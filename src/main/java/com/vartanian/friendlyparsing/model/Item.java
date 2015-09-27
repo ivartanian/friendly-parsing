@@ -1,4 +1,4 @@
-package com.vartanian.testing.model;
+package com.vartanian.friendlyparsing.model;
 
 /**
  * Created by super on 9/21/15.

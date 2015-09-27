@@ -1,10 +1,12 @@
-package com.vartanian.testing.utils;
+package com.vartanian.friendlyparsing.utils;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.io.IOUtils;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,6 +15,8 @@ import java.net.URL;
 import java.util.ArrayList;
 
 public class Utils {
+
+    private static Logger LOG = Logger.getLogger(Utils.class.getName());
 
     public String getResponse(String methodName, String url, String[] names, String[] values) {
 
@@ -66,7 +70,7 @@ public class Utils {
             IOUtils.copy(responseBodyAsStream, writer, "utf8");
             return writer.toString();
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.log(Level.INFO, "Exception: ", e);
         }
         return null;
     }

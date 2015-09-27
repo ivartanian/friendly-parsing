@@ -1,9 +1,9 @@
-package com.vartanian.testing.model;
+package com.vartanian.friendlyparsing.model;
 
 /**
  * Created by super on 9/21/15.
  */
-public class LevelLink {
+public class LevelLink{
 
     private String link;
     private int level;
@@ -52,4 +52,5 @@ public class LevelLink {
     public String toString() {
         return link;
     }
+
 }

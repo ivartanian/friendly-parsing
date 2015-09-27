@@ -12,7 +12,7 @@
 <div>
     <c:forEach var="varItem" items="${resultItems}">
         <div>
-            - <a href=${varItem.link}>${varItem.link}</a> <c:out value=" : score - ${varItem.score}, pass - ${varItem.pass}"/>
+            - <a href=${varItem.url}>${varItem.url}</a> <c:out value=" : score - ${varItem.score}, pass - ${varItem.pass}"/>
     </c:forEach>
 </div>
 
