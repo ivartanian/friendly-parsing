@@ -48,7 +48,7 @@ public class MultiThreadFriendlyParserImpl implements Runnable {
                     resultNode = getResultFriendlyJsonNode(currentLink, "ru_RU");
                     Item resultFriendlyFinal = getResultFriendlyFinal(resultNode, null);
                     if (resultFriendlyFinal != null) {
-                        LOG.log(Level.DEBUG, "resultFriendlyFinal = " + resultFriendlyFinal.getUrl() + " score = " + resultFriendlyFinal.getScore() + " pass = " + resultFriendlyFinal.getPass());
+                        LOG.log(Level.DEBUG, "resultFriendlyFinal = from " + currentLink + " to " + resultFriendlyFinal.getUrl() + " score = " + resultFriendlyFinal.getScore() + " pass = " + resultFriendlyFinal.getPass());
                         resultItems.add(resultFriendlyFinal);
                     }
                 } catch (IOException e) {

@@ -132,7 +132,7 @@ public class MultiThreadSimpleParserImpl implements Runnable {
 
         Document doc;
         try {
-            doc = Jsoup.connect(currentURL).get();
+            doc = Jsoup.connect(currentURL).timeout(10000).get();
         } catch (IOException e) {
             LOG.log(Level.INFO, "Exception connection URL: " + currentURL, e);
             return null;

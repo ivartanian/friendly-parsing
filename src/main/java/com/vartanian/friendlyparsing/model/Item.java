@@ -38,4 +38,20 @@ public class Item {
     public void setPass(String pass) {
         this.pass = pass;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Item item = (Item) o;
+
+        return !(url != null ? !url.equals(item.url) : item.url != null);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return url != null ? url.hashCode() : 0;
+    }
 }

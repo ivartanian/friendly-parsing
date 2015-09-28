@@ -1,0 +1,57 @@
+/* RESET STYLES*/
+html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, font, img, ins, kbd, q, s, samp, small, strike, strong, sub, sup, tt, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td {margin: 0;padding: 0;border: 0;outline: 0;vertical-align: baseline;background: transparent;}
+body{font-size: 12px;}
+ol, ul {list-style: none;}
+blockquote, q {quotes: none;}
+/* remember to define focus styles! */
+:focus {outline: 0;}
+/* remember to highlight inserts somehow! */
+ins {text-decoration: none;}
+del {text-decoration: line-through;}
+/* tables still need ‘cellspacing=”0?‘ in the markup */
+table {border-collapse: collapse;border-spacing: 0;}
+
+body{font-size: 12px;color: #222;background: #fff;font-family: Arial, Helvetica, sans-serif;}
+/*--- Headings --- */
+h1,h2,h3,h4,h5,h6 { font-weight: normal; color: #111; }
+h1 { font-size: 20px; margin-bottom: 0.5em; }
+h2 { font-size: 18px; }
+h3 { font-size: 16px; }
+h4 { font-size: 14px; }
+h5 { font-size: 12px; }
+h6 { font-size: 10px; }
+h1 img, h2 img, h3 img, h4 img, h5 img, h6 img {margin: 0;}
+/*--- Text elements --- */
+p{ margin: 0; }
+p img.left{ float: left; padding: 0; }
+p img.right{ float: right;  }
+
+a, a:link, a:active{ color: #000; text-decoration: none; }
+a:focus, a:hover{ color: #0000FF; }
+
+blockquote  { color: #666; font-style: italic; }
+strong      { font-weight: bold; }
+em,dfn      { font-style: italic; }
+sup, sub    { line-height: 0; }
+
+abbr, acronym{ border-bottom: 1px dotted #666; }
+address{ font-style: italic; }
+del{ color:#666; }
+
+/*--- Lists --- */
+li ul, li ol{ margin:0 }
+ul, ol{ margin: 0; }
+ul{ list-style-type: disc; }
+ol{ list-style-type: decimal; }
+dl{ margin: 0; }
+dl dt{ font-weight: bold; }
+dd{ margin-left: 0;}
+
+/*--- Tables --- */
+table {  width:100%; }
+th { font-weight: bold; }
+thead th { background: #c3d9ff; }
+th,td,caption { padding: 10px; }
+tr.even td { background: #e5ecf9; }
+tfoot { font-style: italic; }
+caption { background: #eee; }
