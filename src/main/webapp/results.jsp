@@ -6,13 +6,17 @@
 <head>
     <title>Результат</title>
 
-    <link href="<c:url value="/resources/css/jquery-ui.css"/>" rel="stylesheet" type="text/css"/>
     <script src="<c:url value="/webjars/jquery/2.1.3/jquery.js"/>"></script>
-    <script src="<c:url value="/resources/js/jquery-ui.js"/>"></script>
 
     <script src="<c:url value="/resources/dataTables_1_10_7/js/jquery.dataTables.js"/>"></script>
 
     <link href="<c:url value="/resources/dataTables_1_10_7/css/jquery.dataTables.css"/>" rel="stylesheet" type="text/css"/>
+
+    <script>
+        $(document).ready(function() {
+            var table = $('#items').DataTable();
+        } );
+    </script>
 
 </head>
 <body>
@@ -20,7 +24,7 @@
     <a href="${pageContext.request.contextPath}">На главную</a>
 </div>
 <div>
-    <h2>Results:</h2>
+    <h2 style="text-align:center">Results: ${site}</h2>
     <table id="items" class="display" cellspacing="0" border="1" width="100%">
         <thead>
         <tr>
@@ -32,7 +36,7 @@
         <tbody>
         <c:forEach var="varItem" items="${resultItems}">
             <tr>
-                <td>
+                <td style="text-align:left">
                     <a href=${varItem.url}>${varItem.url}</a>
                 </td>
                 <td>

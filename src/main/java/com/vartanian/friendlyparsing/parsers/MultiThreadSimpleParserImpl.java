@@ -97,7 +97,7 @@ public class MultiThreadSimpleParserImpl implements Runnable {
             return;
         }
 
-//        randomPause();
+        randomPause();
 
         Elements links = getLinks(levelLink.getLink());
 

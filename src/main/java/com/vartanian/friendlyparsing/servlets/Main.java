@@ -102,6 +102,7 @@ public class Main extends HttpServlet {
             LOG.log(Level.INFO, "Exception: ", e);
         }
 
+        request.setAttribute("site", site);
         request.setAttribute("resultItems", resultItems);
         getServletContext().getRequestDispatcher("/results.jsp").forward(request, response);
     }
