@@ -24,7 +24,7 @@ public class Test {
 
         ExecutorService executorService = Executors.newCachedThreadPool(); //TODO: customize
 
-        int maxDeep = 3;
+        int maxDeep = 1;
         String site = "http://kt.ua";
         String template;
 

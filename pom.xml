@@ -114,7 +114,7 @@
                 <configuration>
                     <charset>utf-8</charset>
                     <server>apache-tomcat-8.0.26</server>
-                    <link>http://localhost:8080/manager/text</link>
+                    <!--<link>http://localhost:8080/manager/text</link>-->
                     <path>/friendly-parsing</path>
                 </configuration>
             </plugin>
