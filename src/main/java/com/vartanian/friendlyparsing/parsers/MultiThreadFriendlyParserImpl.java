@@ -77,21 +77,12 @@ public class MultiThreadFriendlyParserImpl implements Runnable {
 
         JsonNode idNode = null;
         try {
-//            idNode = jsonUtil.getJsonElement(resultNode, "id");
-//            if (idNode == null){
-//                return null;
-//            }
-//            JsonNode ruleGroupsNode = jsonUtil.getJsonElement(resultNode, "ruleGroups");
-//            JsonNode usabilityNode = jsonUtil.getJsonElement(ruleGroupsNode, "USABILITY");
-//            JsonNode scoreNode = jsonUtil.getJsonElement(usabilityNode, "score");
-//            JsonNode passNode = jsonUtil.getJsonElement(usabilityNode, "pass");
-
-            idNode = jsonUtil.getRecursiveFirstJsonElement(resultNode, "id");
+            idNode = jsonUtil.getJsonElement(resultNode, "id");
             if (idNode == null){
                 return null;
             }
-            JsonNode scoreNode = jsonUtil.getRecursiveFirstJsonElement(resultNode, "score");
-            JsonNode passNode = jsonUtil.getRecursiveFirstJsonElement(resultNode, "pass");
+            JsonNode scoreNode = jsonUtil.getJsonElement(resultNode, "score");
+            JsonNode passNode = jsonUtil.getJsonElement(resultNode, "pass");
             return new Item(idNode.toString(), (scoreNode != null ? scoreNode.toString() : null), (passNode != null ? passNode.toString() : null));
         } catch (IOException e) {
             LOG.log(Level.INFO, "Exception: ", e);

@@ -24,27 +24,11 @@ public class JsonUtil {
             return null;
         }
 
-        JsonNode resultNode = jsonNode.get(key);
+        JsonNode resultNode = jsonNode.findValue(key);
         if (resultNode == null){
             return null;
         }
         return resultNode;
-
-    }
-
-    public JsonNode getRecursiveFirstJsonElement(JsonNode jsonNode, String key) throws IOException {
-
-        if (key == null || jsonNode == null){
-            return null;
-        }
-
-        JsonNode resultNode = jsonNode.get(key);
-        if (resultNode != null) return resultNode;
-        for (JsonNode node : jsonNode) {
-            JsonNode recursiveFirstJsonElement = getRecursiveFirstJsonElement(node, key);
-            if (recursiveFirstJsonElement != null) return  recursiveFirstJsonElement;
-        }
-        return null;
 
     }
 
