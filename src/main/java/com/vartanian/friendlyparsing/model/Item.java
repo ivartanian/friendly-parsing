@@ -54,4 +54,13 @@ public class Item {
     public int hashCode() {
         return url != null ? url.hashCode() : 0;
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("url=");
+        sb.append(url);
+        sb.append(", score='").append(score).append('\'');
+        sb.append(", pass='").append(pass).append('\'');
+        return sb.toString();
+    }
 }

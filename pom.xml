@@ -84,11 +84,11 @@
         </dependency>
 
         <!-- Tomcat -->
-        <!--<dependency>-->
-            <!--<groupId>org.apache.tomcat</groupId>-->
-            <!--<artifactId>tomcat-catalina</artifactId>-->
-            <!--<version>8.0.26</version>-->
-        <!--</dependency>-->
+        <dependency>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-catalina</artifactId>
+            <version>8.0.26</version>
+        </dependency>
 
         <!-- JQuery -->
         <dependency>
@@ -118,6 +118,11 @@
                 <configuration>
                     <warSourceDirectory>src/main/webapp</warSourceDirectory>
                     <failOnMissingWebXml>false</failOnMissingWebXml>
+                    <webResources>
+                        <resource>
+                            <directory>src/main/resources</directory>
+                        </resource>
+                    </webResources>
                 </configuration>
             </plugin>
 

@@ -24,6 +24,9 @@
     <a href="${pageContext.request.contextPath}">На главную</a>
 </div>
 <div>
+    <div style="text-align:center">
+        <a href=<c:url value="/results/${fileResult}"/>>Скачать файл</a>
+    </div>
     <h2 style="text-align:center">Results: ${site}</h2>
     <table id="items" class="display" cellspacing="0" border="1" width="100%">
         <thead>

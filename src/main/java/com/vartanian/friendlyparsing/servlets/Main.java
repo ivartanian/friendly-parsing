@@ -7,15 +7,17 @@ import com.vartanian.friendlyparsing.model.Item;
 import com.vartanian.friendlyparsing.model.LevelLink;
 import com.vartanian.friendlyparsing.utils.JsonUtil;
 import com.vartanian.friendlyparsing.utils.Utils;
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.*;
@@ -47,7 +49,7 @@ public class Main extends HttpServlet {
 
         String site_url = request.getParameter("site_url");
 
-        if (site_url == null || "".equals(site_url) || !site_url.startsWith("http://")) {
+        if (site_url == null || "".equals(site_url) || !site_url.startsWith("http://") || "http://".equals(site_url)) {
             getServletContext().getRequestDispatcher("/").forward(request, response);
         }
 
@@ -60,7 +62,7 @@ public class Main extends HttpServlet {
         site = Utils.toFullForm(url, false);
         template = Utils.toFullForm(url, true);
 
-        String hrefQuery = new StringBuilder().append("a[href*=")
+        String hrefQuery = new StringBuilder().append("a[href^=")
                 .append(template)
                 .append("]")
                 .append(":not([href$=.jpg])")
@@ -102,6 +104,21 @@ public class Main extends HttpServlet {
             LOG.log(Level.INFO, "Exception: ", e);
         }
 
+        String fileName = url.getAuthority();
+        if ("".equals(fileName) || fileName == null){
+            fileName = "test";
+        }
+        String path = getServletContext().getRealPath("/results/" + fileName + ".txt");
+        try (Writer writer = new BufferedWriter(new FileWriter(path))) {
+
+            Iterator<Item> iterator = resultItems.iterator();
+            while(iterator.hasNext()) {
+                writer.write(iterator.next()+"\n");
+            }
+            writer.flush();
+        }
+
+        request.setAttribute("fileResult", fileName + ".txt");
         request.setAttribute("site", site);
         request.setAttribute("resultItems", resultItems);
         getServletContext().getRequestDispatcher("/results.jsp").forward(request, response);
